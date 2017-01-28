@@ -4,7 +4,7 @@ WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] + # rows
 INITIAL_MARKER = " ".freeze
 PLAYER_MARKER = 'X'.freeze
 COMPUTER_MARKER = 'O'.freeze
-GOES_FIRST = %w(choose player computer).freeze
+GOES_FIRST = "choose".freeze
 
 def prompt(string)
   puts "=> #{string}"
@@ -39,25 +39,17 @@ def empty_squares(brd)
   brd.keys.select { |num| brd[num] == INITIAL_MARKER }
 end
 
+def clear_screen
+  system("clear") || system("cls")
+end
+
 def joinor(array)
-  if array.size > 1
+  if array.size > 2
     array.join(", ").insert(-2, "or ")
   elsif array.size == 2
     array.join(" or ")
   else
     array.join
-  end
-end
-
-def who_goes_first(first_turn)
-  first_turn = GOES_FIRST.sample
-
-  if first_turn == "choose"
-    choose_first_turn(first_turn)
-  elsif first_turn == "player"
-    return "player"
-  else
-    return "computer"
   end
 end
 
@@ -98,28 +90,28 @@ def computer_squares_at_risk(line, brd, marker)
   end
 end
 
-def computer_picks(brd)
+def computer_strategy(brd, marker)
   square = nil
-
   WINNING_LINES.each do |line|
-    square = computer_squares_at_risk(line, brd, COMPUTER_MARKER)
+    square = computer_squares_at_risk(line, brd, marker)
     break if square
   end
 
-  if !square
-    WINNING_LINES.each do |line|
-      square = computer_squares_at_risk(line, brd, PLAYER_MARKER)
-      break if square
-    end
-  end
+  square
+end
 
-  if !square
-    if brd[5] == INITIAL_MARKER
-      square = 5
-    else
-      square = empty_squares(brd).sample
-    end
-  end
+def center_square(brd)
+  5 if brd[5] == INITIAL_MARKER
+end
+
+def computer_picks(brd)
+  square = computer_strategy(brd, COMPUTER_MARKER)
+
+  square = computer_strategy(brd, PLAYER_MARKER) unless square
+
+  square = center_square(brd) unless square
+
+  square = empty_squares(brd).sample unless square
 
   brd[square] = COMPUTER_MARKER
 end
@@ -142,54 +134,61 @@ end
 
 def detect_winner(brd)
   WINNING_LINES.each do |line|
-    if brd[line[0]] == PLAYER_MARKER &&
-       brd[line[1]] == PLAYER_MARKER &&
-       brd[line[2]] == PLAYER_MARKER
+    if brd.values_at(*line).count(PLAYER_MARKER) == 3
       return "Player"
-    elsif brd[line[0]] == COMPUTER_MARKER &&
-          brd[line[1]] == COMPUTER_MARKER &&
-          brd[line[2]] == COMPUTER_MARKER
+    elsif brd.values_at(*line).count(COMPUTER_MARKER) == 3
       return "Computer"
     end
   end
   nil
 end
 
+player_score = 0
+computer_score = 0
 first_turn = ""
 current_player = ""
 loop do
+  prompt "---------------------------------"
   prompt "Welcome to the Tic Tac Toe game!!"
-  
+  prompt "---------------------------------"
+
   loop do
-    player_score = 0
-    computer_score = 0
     board = initialize_board
-    first_turn = who_goes_first(first_turn)
+    first_turn = choose_first_turn(first_turn)
     prompt "The #{first_turn} has the first pick!!"
     current_player = first_turn
-    
+
     loop do
       display_board(board)
+
       place_piece(board, current_player)
       break if someone_won?(board) || board_full?(board)
       current_player = change_player(current_player)
     end
 
     display_board(board)
-    system "cls"
+    clear_screen
 
     player_score += 1 if detect_winner(board) == "Player"
     computer_score += 1 if detect_winner(board) == "Computer"
 
     prompt "#{detect_winner(board)} won!" if someone_won?(board)
-    prompt "it's a tie!" if board_full?(board)
+    prompt "----------------------------"
+    if board_full?(board) && !someone_won?(board)
+      prompt "It's a tie!"
+      prompt "-----------"
+    end
     prompt "First to 5 wins the game!!"
+    prompt "--------------------------"
     prompt "Current score: You #{player_score} and computer #{computer_score}"
+    prompt "-----------------------------------------------------------------"
 
     next unless player_score == 5 || computer_score == 5
     prompt "Play again? (y or n)"
     answer = gets.chomp
     break unless answer.downcase.start_with?("y")
+    player_score = 0
+    computer_score = 0
   end
   break
 end
