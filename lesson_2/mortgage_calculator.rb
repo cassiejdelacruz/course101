@@ -22,10 +22,10 @@ loop do
   name = gets.chomp
   if name.empty?
     prompt(MESSAGES["empty_name"])
-  elsif name.match(/^[a-z]+$/i) == nil?
-    prompt(MESSAGES["valid_name"])
-  else
+  elsif /^[a-z]+$/i.match(name)
     break
+  else
+    prompt(MESSAGES["valid_name"])
   end
 end
 
@@ -72,7 +72,7 @@ loop do
           loan_duration = loan_duration.to_i
           break
         else
-          duration_time != "y" || "m"
+          duration_time != "y" || duration_time != "m"
           prompt(MESSAGES["error_duration"])
         end
       end
